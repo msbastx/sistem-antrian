@@ -5,6 +5,9 @@ import {
   getUserNotifikasi,
   getUserProfile,
   updateUserProfile,
+  getUserEstimasiAktif,
+  listLayananUser,
+  getAntrianAktifUser,
 } from "../controllers/userController.js";
 import { authUser } from "../middleware/authMiddleware.js";
 
@@ -33,6 +36,21 @@ router.get("/me/antrian", authUser, (req, res) => {
 router.get("/me/notifikasi", authUser, (req, res) => {
   req.params.userId = req.user.id;
   return getUserNotifikasi(req, res);
+});
+
+// Estimasi antrian aktif user
+router.get("/me/estimasi", authUser, (req, res) => {
+  return getUserEstimasiAktif(req, res);
+});
+
+// Layanan aktif
+
+router.get("/layanan", authUser, (req, res) => {
+  return listLayananUser(req, res);
+});
+
+router.get("/layanan/:layananId/aktif", authUser, (req, res) => {
+  return getAntrianAktifUser(req, res);
 });
 
 export default router;

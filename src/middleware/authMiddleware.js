@@ -6,53 +6,42 @@ dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev_secret";
 
-// Middleware umum: cek token
-export const authMiddleware = (req, res, next) => {
-  const authHeader = req.headers.authorization || "";
-
-  // Harus bentuk: "Bearer <token>"
-  const token = authHeader.startsWith("Bearer ")
-    ? authHeader.slice(7)
-    : null;
-
-  if (!token) {
+const authMiddleware = (req, res, next, expectedRole = null) => {
+  const authHeader = req.headers["authorization"];
+  if (!authHeader) {
     return res
       .status(401)
       .json({ success: false, message: "Token tidak ditemukan" });
   }
 
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded; // { id, role }
-    next();
-  } catch (err) {
-    console.error("Auth error:", err.message);
+  const token = authHeader.split(" ")[1];
+  if (!token) {
     return res
       .status(401)
-      .json({ success: false, message: "Token tidak valid atau sudah kadaluarsa" });
+      .json({ success: false, message: "Token tidak valid" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = { id: decoded.id, role: decoded.role };
+
+    if (expectedRole && decoded.role !== expectedRole) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Akses ditolak" });
+    }
+
+    next();
+  } catch (err) {
+    console.error("authMiddleware error:", err);
+    return res
+      .status(401)
+      .json({ success: false, message: "Token tidak valid / kadaluarsa" });
   }
 };
 
-// Middleware khusus user
-export const authUser = (req, res, next) => {
-  authMiddleware(req, res, () => {
-    if (req.user.role !== "user") {
-      return res
-        .status(403)
-        .json({ success: false, message: "Akses user saja" });
-    }
-    next();
-  });
-};
+export const authUser = (req, res, next) =>
+  authMiddleware(req, res, next, "user");
 
-// Middleware khusus admin
-export const authAdmin = (req, res, next) => {
-  authMiddleware(req, res, () => {
-    if (req.user.role !== "admin") {
-      return res
-        .status(403)
-        .json({ success: false, message: "Akses admin saja" });
-    }
-    next();
-  });
-};
+export const authAdmin = (req, res, next) =>
+  authMiddleware(req, res, next, "admin");

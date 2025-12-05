@@ -65,13 +65,10 @@ export const selesaiAntrian = async (req, res) => {
   }
 };
 
-/**
- * POST /api/antrian/:antrianId/batalkan
- * auth: user
- */
+// POST /api/antrian/:antrianId/batalkan
 export const batalkanAntrian = async (req, res) => {
   const { antrianId } = req.params;
-  const userId = req.user.id;
+  const userId = req.user.id; // dari JWT (authUser)
 
   try {
     const [resultSets] = await db.query("CALL sp_batalkan_antrian(?, ?);", [
@@ -80,12 +77,19 @@ export const batalkanAntrian = async (req, res) => {
     ]);
 
     const rows = resultSets[0] || [];
-    const data = rows[0] || null;
+
+    // Kalau SP mengembalikan kode error
+    if (rows[0] && rows[0].kode === "TIDAK_BISA_DIBATALKAN") {
+      return res.status(400).json({
+        success: false,
+        message: "Antrian tidak bisa dibatalkan (bukan milik Anda / sudah diproses)",
+      });
+    }
 
     res.json({
       success: true,
-      message: `Antrian ${antrianId} dibatalkan (jika masih MENUNGGU)`,
-      data,
+      message: "Antrian berhasil dibatalkan",
+      data: rows[0] || null,
     });
   } catch (err) {
     console.error("Error batalkanAntrian:", err);

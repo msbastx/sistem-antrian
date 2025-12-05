@@ -149,3 +149,71 @@ export const getMyNotifikasi = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+// GET /api/users/me/estimasi
+export const getUserEstimasiAktif = async (req, res) => {
+  const userId = req.user.id; // dari JWT
+
+  try {
+    const [resultSets] = await db.query(
+      "CALL sp_get_estimasi_user_aktif(?);",
+      [userId]
+    );
+
+    const rows = resultSets[0] || [];
+    const data = rows[0] || null;
+
+    res.json({
+      success: true,
+      data, // bisa null kalau user tidak punya antrian aktif
+    });
+  } catch (err) {
+    console.error("Error getUserEstimasiAktif:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/**
+ * GET /api/users/layanan
+ * User melihat daftar layanan
+ */
+export const listLayananUser = async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      "SELECT layanan_id, nama_layanan, rata_waktu_layanan, created_at FROM layanan ORDER BY layanan_id"
+    );
+
+    res.json({
+      success: true,
+      data: rows,
+    });
+  } catch (err) {
+    console.error("Error listLayananUser:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/**
+ * GET /api/users/layanan/:layananId/aktif
+ * User melihat nomor antrian yang sedang DIPANGGIL untuk layanan tersebut
+ */
+export const getAntrianAktifUser = async (req, res) => {
+  const { layananId } = req.params;
+
+  try {
+    const [resultSets] = await db.query("CALL sp_get_antrian_aktif(?);", [
+      layananId,
+    ]);
+
+    const rows = resultSets[0] || [];
+    const data = rows[0] || null; // bisa null kalau belum ada antrian DIPANGGIL
+
+    res.json({
+      success: true,
+      data,
+    });
+  } catch (err) {
+    console.error("Error getAntrianAktifUser:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};

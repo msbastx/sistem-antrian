@@ -71,7 +71,7 @@ export const panggilBerikut = async (req, res) => {
 };
 
 /* ==========================
- * CRUD LAYANAN (opsional tapi bagus)
+ * CRUD LAYANAN
  * ========================== */
 
 // GET /api/admin/layanan
@@ -164,5 +164,48 @@ export const listNotifikasiAdmin = async (req, res) => {
   } catch (err) {
     console.error("Error listNotifikasiAdmin:", err);
     res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+/* ==========================
+ * RESET ANTRIAN HARIAN
+ * ========================== */
+
+// POST /api/admin/antrian/reset-harian
+export const resetAntrianHarian = async (req, res) => {
+  try {
+    await db.query("CALL sp_reset_antrian_harian();");
+
+    res.json({
+      success: true,
+      message: "Reset antrian harian berhasil dijalankan",
+    });
+  } catch (err) {
+    console.error("Error resetAntrianHarian:", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Gagal reset antrian harian" });
+  }
+};
+
+/* ==========================
+ * AUDIT LOG (opsional, untuk dosen)
+ * ========================== */
+
+// GET /api/admin/audit-log
+export const listAuditLog = async (req, res) => {
+  try {
+    const [resultSets] = await db.query("CALL sp_list_audit_log();");
+    const data = resultSets[0] || [];
+
+    res.json({
+      success: true,
+      data,
+    });
+  } catch (err) {
+    console.error("Error listAuditLog:", err);
+    res
+      .status(500)
+      .json({ success: false, message: "Gagal mengambil audit log" });
   }
 };
